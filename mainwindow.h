@@ -6,9 +6,9 @@
 #include <QGraphicsView>
 #include <QLineEdit>
 #include <QPushButton>
-#include <QMessageBox>  // Для показа сообщений об ошибках
-#include <QVBoxLayout>  // Для компоновки виджетов, если требуется
-#include <QWidget>      // Для использования QWidget
+#include <QMessageBox>  
+#include <QVBoxLayout>  
+#include <QWidget>      
 #include <QMenu>
 #include <QMenuBar>
 #include <QMessageBox>
@@ -18,32 +18,53 @@
 #include <QMouseEvent>
 #include <QGraphicsSceneMouseEvent>
 
-class MainWindow : public QMainWindow {
-    Q_OBJECT
+class ChargeItem : public QGraphicsEllipseItem {
 public:
-    explicit MainWindow(QWidget *parent = nullptr);
-
-private slots:
-    void onAddPointButtonClicked(); // Слот для клика по сцене
-    void onAddManualChargeButtonClicked(); // Слот для ручного добавления заряда
-    void onCalculateButtonClicked(); // Добавлено
-    void onClearButtonClicked(); // Добавлено
+    ChargeItem(double x, double y, double charge, QGraphicsItem *parent = nullptr)
+        : QGraphicsEllipseItem(x - 5, y - 5, 10, 10, parent), charge(charge) {
+        setBrush(QBrush(Qt::green));
+        setFlag(QGraphicsItem::ItemIsSelectable, true);
+    }
+    void mousePressEvent(QGraphicsSceneMouseEvent *event) override {
+        if (event->button() == Qt::LeftButton) {
+            QToolTip::showText(event->screenPos(), QString("Заряд: %1").arg(charge));
+        }
+        QGraphicsEllipseItem::mousePressEvent(event);
+    }
 
 private:
+    double charge;
+};
+
+class MainWindow : public QMainWindow {
+    Q_OBJECT
+
+public:
+    MainWindow(QWidget *parent = nullptr);
+    bool eventFilter(QObject *watched, QEvent *event) override;
+
+private slots:
+    void onCalculateButtonClicked();
+    void onClearButtonClicked();
+    void onAddPointButtonClicked();
+    void onAddManualChargeButtonClicked();
+    void onAddCharge(double x, double y, double charge);
+
+private:
+    void drawRuler();
+
     QGraphicsScene *scene;
     QGraphicsView *view;
     QLineEdit *xInput;
     QLineEdit *yInput;
     QLineEdit *chargeInput;
-    QPushButton *addPointButton;  // Кнопка для добавления заряда по клику
-    QPushButton *addManualChargeButton;  // Кнопка для ручного добавления заряда
     QPushButton *calculateButton;
     QPushButton *clearButton;
-    QList<QPointF> charges; // Список для хранения координат зарядов
-    QList<double> chargesValues; // Список для хранения значений зарядов
+    QPushButton *addPointButton;
+    QPushButton *addManualChargeButton;
 
-    void drawRuler();
-    void onAddCharge(double x, double y, double charge); // Добавляем заряд на сцену
+    QList<QPointF> charges;
+    QList<double> chargesValues;
 };
 
-#endif // MAINWINDOW_H
+#endif
