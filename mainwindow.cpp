@@ -1,5 +1,7 @@
 #include "mainwindow.h"
 
+// Структура для хранения координат и заряда то
+
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
     setWindowTitle("Электростатическое поле");
     setFixedSize(1200, 800);
@@ -33,8 +35,8 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
     addPointButton = new QPushButton("Добавить заряд по клику");
     addManualChargeButton = new QPushButton("Добавить заряд вручную");
 
-    xInput->setPlaceholderText("Введите X");
-    yInput->setPlaceholderText("Введите Y");
+    xInput->setPlaceholderText("Введите Y");
+    yInput->setPlaceholderText("Введите X");
     chargeInput->setPlaceholderText("Введите заряд");
     inputLayout->addWidget(xInput);
     inputLayout->addWidget(yInput);
@@ -49,7 +51,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
     mainLayout->addLayout(inputLayout);
 
     QWidget *centralWidget = new QWidget();
-    centralWidget->setLayout(mainLayout);
+    centralWidget->setLayout(mainLayout); 
     setCentralWidget(centralWidget);
 
     connect(calculateButton, &QPushButton::clicked, this, &MainWindow::onCalculateButtonClicked);
@@ -67,17 +69,18 @@ void MainWindow::drawRuler() {
 }
 
 void MainWindow::onCalculateButtonClicked() {
-    if (charges.isEmpty()) {
+    if (chargePoints.isEmpty()) {
         QMessageBox::warning(this, "Ошибка", "Необходимо ввести хотя бы один заряд!");
         return;
     }
+
+    logAllCharges();  // Выводим список всех зарядов в лог
 }
 
 void MainWindow::onClearButtonClicked() {
     scene->clear();
     drawRuler();
-    charges.clear();
-    chargesValues.clear();
+    chargePoints.clear();  // Очищаем список точек
 }
 
 void MainWindow::onAddPointButtonClicked() {
@@ -104,11 +107,23 @@ void MainWindow::onAddManualChargeButtonClicked() {
 }
 
 void MainWindow::onAddCharge(double x, double y, double charge) {
-    charges.append(QPointF(x, y));
-    chargesValues.append(charge);
+    ChargePoint point;        
+    point.x = static_cast<uint>(x); 
+    point.y = static_cast<uint>(y); 
+    point.charge = charge;    
 
-    ChargeItem *chargeItem = new ChargeItem(x, y, charge);
+    chargePoints.append(point); 
+
+    ChargeItem *chargeItem = new ChargeItem(point); 
     scene->addItem(chargeItem);
+    logAllCharges(); 
+}
+
+void MainWindow::logAllCharges() {
+    qDebug() << "Текущий список зарядов:";
+    for (const ChargePoint &point : chargePoints) {
+        qDebug() << "X =" << point.x << " Y =" << point.y << " Заряд =" << point.charge;
+    }
 }
 
 bool MainWindow::eventFilter(QObject *watched, QEvent *event) {

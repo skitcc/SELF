@@ -11,20 +11,27 @@
 #include <QWidget>      
 #include <QMenu>
 #include <QMenuBar>
-#include <QMessageBox>
 #include <QInputDialog>
 #include <QGraphicsEllipseItem>
 #include <QToolTip>
 #include <QMouseEvent>
 #include <QGraphicsSceneMouseEvent>
+#include <QDebug>
+
+struct ChargePoint {
+    uint x;
+    uint y;
+    double charge;
+};
 
 class ChargeItem : public QGraphicsEllipseItem {
 public:
-    ChargeItem(double x, double y, double charge, QGraphicsItem *parent = nullptr)
-        : QGraphicsEllipseItem(x - 5, y - 5, 10, 10, parent), charge(charge) {
+    ChargeItem(ChargePoint point, QGraphicsItem *parent = nullptr)
+        : QGraphicsEllipseItem(point.x - 5, point.y - 5, 10, 10, parent), charge(point.charge) {
         setBrush(QBrush(Qt::green));
         setFlag(QGraphicsItem::ItemIsSelectable, true);
     }
+
     void mousePressEvent(QGraphicsSceneMouseEvent *event) override {
         if (event->button() == Qt::LeftButton) {
             QToolTip::showText(event->screenPos(), QString("Заряд: %1").arg(charge));
@@ -52,6 +59,7 @@ private slots:
 
 private:
     void drawRuler();
+    void logAllCharges();
 
     QGraphicsScene *scene;
     QGraphicsView *view;
@@ -63,8 +71,7 @@ private:
     QPushButton *addPointButton;
     QPushButton *addManualChargeButton;
 
-    QList<QPointF> charges;
-    QList<double> chargesValues;
+    QList<ChargePoint> chargePoints;  
 };
 
-#endif
+#endif 
