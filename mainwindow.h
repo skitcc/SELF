@@ -2,35 +2,32 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
-#include <QGraphicsView>
 #include <QGraphicsScene>
+#include <QGraphicsView>
 #include <QLineEdit>
-#include <QVBoxLayout>
-#include <QHBoxLayout>
 #include <QPushButton>
-#include <QLabel>
+#include <QMessageBox>  // Для показа сообщений об ошибках
+#include <QVBoxLayout>  // Для компоновки виджетов, если требуется
+#include <QWidget>      // Для использования QWidget
+#include <QMenu>
 #include <QMenuBar>
-#include <QAction>
-#include <QMouseEvent>
+#include <QMessageBox>
+#include <QInputDialog>
 #include <QGraphicsEllipseItem>
-#include <QGraphicsSceneMouseEvent>
 #include <QToolTip>
-#include <QGraphicsEllipseItem>
+#include <QMouseEvent>
+#include <QGraphicsSceneMouseEvent>
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
-
 public:
-    MainWindow(QWidget *parent = nullptr);
-    void drawRuler(); 
-    void onAddCharge(double x, double y, double charge); 
+    explicit MainWindow(QWidget *parent = nullptr);
 
 private slots:
-    void onCalculateButtonClicked();
-    void onClearButtonClicked();
-
-protected:
-    void mousePressEvent(QMouseEvent *event) override; 
+    void onAddPointButtonClicked(); // Слот для клика по сцене
+    void onAddManualChargeButtonClicked(); // Слот для ручного добавления заряда
+    void onCalculateButtonClicked(); // Добавлено
+    void onClearButtonClicked(); // Добавлено
 
 private:
     QGraphicsScene *scene;
@@ -38,10 +35,15 @@ private:
     QLineEdit *xInput;
     QLineEdit *yInput;
     QLineEdit *chargeInput;
+    QPushButton *addPointButton;  // Кнопка для добавления заряда по клику
+    QPushButton *addManualChargeButton;  // Кнопка для ручного добавления заряда
     QPushButton *calculateButton;
     QPushButton *clearButton;
-    QList<QPointF> charges; // Список введённых координат зарядов
-    QList<double> chargesValues; // Список значений зарядов
+    QList<QPointF> charges; // Список для хранения координат зарядов
+    QList<double> chargesValues; // Список для хранения значений зарядов
+
+    void drawRuler();
+    void onAddCharge(double x, double y, double charge); // Добавляем заряд на сцену
 };
 
-#endif 
+#endif // MAINWINDOW_H
