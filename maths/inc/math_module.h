@@ -7,9 +7,11 @@
 extern "C" {
 #endif
 
-// Рассчет поля потенциалов -- функция на импорт
+// Рассчет -- функции на импорт
 int calculate_potential_field(int rows, int cols, point_charge *charges, int count_of_charges, double ***field);
 int calculate_electric_field(int rows, int cols, point_charge *charges, int count_of_charges, vect ***field);
+
+double calculate_single_point_potential(int x, int y, point_charge *charges, int num_of_charges);
 
 // Вспомогательные функции (трогать только если очень надо)
 int is_position_allowed(int x, int y, point_charge charge);

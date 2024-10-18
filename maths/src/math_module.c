@@ -1,5 +1,16 @@
 #include "../inc/math_module.h"
 
+// Расчет потенциала единственной точки //////////////////////////////////////////////////////////
+double calculate_single_point_potential(int x, int y, point_charge *charges, int num_of_charges)
+{
+    double potential = 0.0;
+    for (int c = 0; c < num_of_charges; c++)
+    {
+        potential += calc_potential(x, y, charges[c]);
+    }
+    return potential;
+}
+///////////////////////////////////////////////////////////////////////////////////////////////////
 // Расчет полей ////////////////////////////////////////////////////////////////////////////////////////////////
 int calculate_potential_field(int rows, int cols, point_charge *charges, int count_of_charges, double ***field)
 {
