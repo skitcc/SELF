@@ -9,7 +9,8 @@
 #define EPSILON 1e-5
 #define ELECTRIC_COEFFICIENT 9e9
 
-#define PIXEL_TO_METER_CONVERSION 100 // Извенить!!!!!
+#define PIXEL_TO_METER_CONVERSION 1e-4 // Надо скорректировать
+#define Q_TO_nQ 1e-9
 
 #define OK 0
 #define ALLOC_ERR 99

@@ -148,13 +148,13 @@ void free_electric_field(int rows, vect **field)
 double calc_potential(int x, int y, point_charge charge)
 {
     double r = PIXEL_TO_METER_CONVERSION * sqrt(pow(abs(charge.x - x), 2) + pow(abs(charge.y - y), 2));
-    return (ELECTRIC_COEFFICIENT * charge.value / r);
+    return (Q_TO_nQ * ELECTRIC_COEFFICIENT * charge.value / r);
 }
 
 vect calc_elecrtic_strenght(int x, int y, point_charge charge)
 {
-    double r = sqrt(pow(abs(charge.x - x), 2) + pow(abs(charge.y - y), 2));
-    double full_vect = ELECTRIC_COEFFICIENT * charge.value / pow(r, 2);
+    double r = PIXEL_TO_METER_CONVERSION * sqrt(pow(abs(charge.x - x), 2) + pow(abs(charge.y - y), 2));
+    double full_vect = Q_TO_nQ * ELECTRIC_COEFFICIENT * charge.value / pow(r, 2);
     vect result;
     result.x_component = cos(x - charge.x) * full_vect;
     result.y_component = sin(y - charge.y) * full_vect;
