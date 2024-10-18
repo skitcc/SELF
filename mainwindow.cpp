@@ -1,7 +1,5 @@
 #include "mainwindow.h"
 
-// Структура для хранения координат и заряда то
-
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
     setWindowTitle("Электростатическое поле");
     setFixedSize(1200, 800);
@@ -35,9 +33,9 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
     addPointButton = new QPushButton("Добавить заряд по клику");
     addManualChargeButton = new QPushButton("Добавить заряд вручную");
 
-    xInput->setPlaceholderText("Введите Y");
-    yInput->setPlaceholderText("Введите X");
-    chargeInput->setPlaceholderText("Введите заряд");
+    xInput->setPlaceholderText("Введите X");
+    yInput->setPlaceholderText("Введите Y");
+    chargeInput->setPlaceholderText("Введите значение заряда в нанокулонах");
     inputLayout->addWidget(xInput);
     inputLayout->addWidget(yInput);
     inputLayout->addWidget(chargeInput);
@@ -51,7 +49,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
     mainLayout->addLayout(inputLayout);
 
     QWidget *centralWidget = new QWidget();
-    centralWidget->setLayout(mainLayout); 
+    centralWidget->setLayout(mainLayout);
     setCentralWidget(centralWidget);
 
     connect(calculateButton, &QPushButton::clicked, this, &MainWindow::onCalculateButtonClicked);
@@ -87,32 +85,15 @@ void MainWindow::onCalculateButtonClicked() {
         charges[i].value = chargePoints[i].charge;
     }
 
-    
-    int result = calculate_potential_field(600, 800, charges, chargePoints.size(), &potentialField);
-    
-    if (result != OK) {
-        QMessageBox::warning(this, "Ошибка", "Не удалось вычислить потенциал поля.");
-        free(charges);
-        for (int i = 0; i < 600; i++) {
-            free(potentialField[i]);
-        }
-        free(potentialField);
-        return;
-    }
-
-
-    free(charges);  
-    for (int i = 0; i < 600; i++) {
-        free(potentialField[i]);
-    }
-    free(potentialField);
+    // int result = calculate_potential_field(600, 800, charges, chargePoints.size(), &potentialField);
 }
-
 
 void MainWindow::onClearButtonClicked() {
     scene->clear();
     drawRuler();
-    chargePoints.clear();  // Очищаем список точек
+    chargePoints.clear();  
+    splinePath = QPainterPath(); 
+    update(); 
 }
 
 void MainWindow::onAddPointButtonClicked() {
@@ -139,16 +120,16 @@ void MainWindow::onAddManualChargeButtonClicked() {
 }
 
 void MainWindow::onAddCharge(double x, double y, double charge) {
-    ChargePoint point;        
-    point.x = static_cast<uint>(x); 
-    point.y = static_cast<uint>(y); 
-    point.charge = charge;    
+    ChargePoint point;
+    point.x = static_cast<uint>(x);
+    point.y = static_cast<uint>(y);
+    point.charge = charge;
 
-    chargePoints.append(point); 
+    chargePoints.append(point);
 
-    ChargeItem *chargeItem = new ChargeItem(point); 
+    ChargeItem *chargeItem = new ChargeItem(point);
     scene->addItem(chargeItem);
-    logAllCharges(); 
+    logAllCharges();
 }
 
 void MainWindow::logAllCharges() {
@@ -159,22 +140,59 @@ void MainWindow::logAllCharges() {
 }
 
 bool MainWindow::eventFilter(QObject *watched, QEvent *event) {
-    if (watched == view && event->type() == QEvent::MouseButtonPress) {
-        QMouseEvent *mouseEvent = static_cast<QMouseEvent*>(event);
-        if (mouseEvent->button() == Qt::LeftButton) {
-            QPointF scenePos = view->mapToScene(mouseEvent->pos());
+    if (watched == view) {
+        if (event->type() == QEvent::MouseButtonPress) {
+            QMouseEvent *mouseEvent = static_cast<QMouseEvent*>(event);
+            if (mouseEvent->button() == Qt::LeftButton) {
+                QPointF scenePos = view->mapToScene(mouseEvent->pos());
 
-            if (scenePos.x() >= 0 && scenePos.y() >= 0 && scenePos.x() <= 800 && scenePos.y() <= 600) {
-                bool ok;
-                double charge = QInputDialog::getDouble(this, "Введите заряд", "Заряд точки (не может быть 0):", 0, -10000, 10000, 2, &ok);
+                if (scenePos.x() >= 0 && scenePos.y() >= 0 && scenePos.x() <= 800 && scenePos.y() <= 600) {
+                    bool ok;
+                    double charge = QInputDialog::getDouble(this, "Введите заряд", "Заряд точки (не может быть 0) в нанокулонах:", 0, -10000, 10000, 2, &ok);
 
-                if (ok && charge != 0) {
-                    onAddCharge(scenePos.x(), scenePos.y(), charge);
+                    if (ok && charge != 0) {
+                        onAddCharge(scenePos.x(), scenePos.y(), charge);
+                    }
                 }
             }
+        } else if (event->type() == QEvent::KeyPress) {
+            QKeyEvent *keyEvent = static_cast<QKeyEvent*>(event);
+            if (keyEvent->key() == Qt::Key_C) {
+                QPoint cursorPos = QCursor::pos();
+                QPointF scenePos = view->mapToScene(view->mapFromGlobal(cursorPos));
+
+                if (scenePos.x() >= 0 && scenePos.y() >= 0 && scenePos.x() <= 800 && scenePos.y() <= 600) {
+                    double potential = calculatePotentialAt(scenePos.x(), scenePos.y());
+
+                    QMessageBox::information(this, "Потенциал",
+                                             QString("Потенциал в точке (X: %1, Y: %2) = %3")
+                                             .arg(scenePos.x())
+                                             .arg(scenePos.y())
+                                             .arg(potential));
+                }
+                return true;
+            }
         }
-        return true;
     }
 
     return QMainWindow::eventFilter(watched, event);
 }
+
+double MainWindow::calculatePotentialAt(int x, int y) {
+    if (chargePoints.isEmpty()) {
+        return 0.0;
+    }
+
+    point_charge *charges = (point_charge *)malloc(chargePoints.size() * sizeof(point_charge));
+    for (int i = 0; i < chargePoints.size(); ++i) {
+        charges[i].x = chargePoints[i].x;
+        charges[i].y = chargePoints[i].y;
+        charges[i].value = chargePoints[i].charge;
+    }
+
+    double potential = calculate_single_point_potential(x, y, charges, chargePoints.size());
+    free(charges); 
+
+    return potential;
+}
+

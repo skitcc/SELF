@@ -1,16 +1,17 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
-#include "./math_module/inc/math_module.h"
+#include "./maths/inc/math_module.h"
+#include "./maths/inc/definitions_math.h"
 
 #include <QMainWindow>
 #include <QGraphicsScene>
 #include <QGraphicsView>
 #include <QLineEdit>
 #include <QPushButton>
-#include <QMessageBox>  
-#include <QVBoxLayout>  
-#include <QWidget>      
+#include <QMessageBox>
+#include <QVBoxLayout>
+#include <QWidget>
 #include <QMenu>
 #include <QMenuBar>
 #include <QInputDialog>
@@ -19,6 +20,9 @@
 #include <QMouseEvent>
 #include <QGraphicsSceneMouseEvent>
 #include <QDebug>
+#include <QPainterPath>
+#include <algorithm>
+#include <cmath>
 
 struct ChargePoint {
     uint x;
@@ -51,6 +55,7 @@ class MainWindow : public QMainWindow {
 public:
     MainWindow(QWidget *parent = nullptr);
     bool eventFilter(QObject *watched, QEvent *event) override;
+    double calculatePotentialAt(int x, int y);
 
 private slots:
     void onCalculateButtonClicked();
@@ -74,7 +79,8 @@ private:
     QPushButton *addManualChargeButton;
     double **potentialField;
 
-    QList<ChargePoint> chargePoints;  
+    QList<ChargePoint> chargePoints;
+    QPainterPath splinePath;
 };
 
-#endif 
+#endif
