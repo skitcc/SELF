@@ -14,6 +14,10 @@
 #define OK 0
 #define ALLOC_ERR 99
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct
 {
     int x;
@@ -26,5 +30,9 @@ typedef struct
     double x_component;
     double y_component;
 } vect;
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // DEFINITIONS_MATH_H__

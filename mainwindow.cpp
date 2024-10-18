@@ -1,7 +1,5 @@
 #include "mainwindow.h"
 
-// Структура для хранения координат и заряда то
-
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
     setWindowTitle("Электростатическое поле");
     setFixedSize(1200, 800);
@@ -35,8 +33,8 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
     addPointButton = new QPushButton("Добавить заряд по клику");
     addManualChargeButton = new QPushButton("Добавить заряд вручную");
 
-    xInput->setPlaceholderText("Введите Y");
-    yInput->setPlaceholderText("Введите X");
+    xInput->setPlaceholderText("Введите X");
+    yInput->setPlaceholderText("Введите Y");
     chargeInput->setPlaceholderText("Введите заряд");
     inputLayout->addWidget(xInput);
     inputLayout->addWidget(yInput);
@@ -51,7 +49,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
     mainLayout->addLayout(inputLayout);
 
     QWidget *centralWidget = new QWidget();
-    centralWidget->setLayout(mainLayout); 
+    centralWidget->setLayout(mainLayout);
     setCentralWidget(centralWidget);
 
     connect(calculateButton, &QPushButton::clicked, this, &MainWindow::onCalculateButtonClicked);
@@ -87,9 +85,8 @@ void MainWindow::onCalculateButtonClicked() {
         charges[i].value = chargePoints[i].charge;
     }
 
-    
     int result = calculate_potential_field(600, 800, charges, chargePoints.size(), &potentialField);
-    
+
     if (result != OK) {
         QMessageBox::warning(this, "Ошибка", "Не удалось вычислить потенциал поля.");
         free(charges);
@@ -100,19 +97,59 @@ void MainWindow::onCalculateButtonClicked() {
         return;
     }
 
+    // Сортировка точек по заряду
+    std::sort(charges, charges + chargePoints.size(), [](const point_charge &a, const point_charge &b) {
+        return a.value < b.value;
+    });
 
-    free(charges);  
+    // Группировка точек по заряду
+    QVector<QVector<point_charge>> groups;
+    QVector<point_charge> currentGroup;
+    double tolerance = 0.001; // Порог сравнения заряда
+
+    for (int i = 0; i < chargePoints.size(); ++i) {
+        if (currentGroup.isEmpty() || std::abs(charges[i].value - currentGroup.first().value) <= tolerance) {
+            currentGroup.append(charges[i]);
+        } else {
+            groups.append(currentGroup);
+            currentGroup.clear();
+            currentGroup.append(charges[i]);
+        }
+    }
+    if (!currentGroup.isEmpty()) {
+        groups.append(currentGroup);
+    }
+
+    // Соединение точек сплайном
+    splinePath = QPainterPath();
+    for (const auto &group : groups) {
+        if (group.size() < 2) continue; 
+        splinePath.moveTo(group.first().x, group.first().y);
+        for (int i = 1; i < group.size(); ++i) {
+            splinePath.lineTo(group[i].x, group[i].y);
+        }
+    }
+
+    // Добавление сплайна на сцену
+    QGraphicsPathItem *splineItem = new QGraphicsPathItem(splinePath);
+    splineItem->setPen(QPen(Qt::green, 2)); 
+    scene->addItem(splineItem);
+
+    update();
+
+    free(charges);
     for (int i = 0; i < 600; i++) {
         free(potentialField[i]);
     }
     free(potentialField);
 }
 
-
 void MainWindow::onClearButtonClicked() {
     scene->clear();
     drawRuler();
-    chargePoints.clear();  // Очищаем список точек
+    chargePoints.clear();  
+    splinePath = QPainterPath(); 
+    update(); 
 }
 
 void MainWindow::onAddPointButtonClicked() {
@@ -139,16 +176,16 @@ void MainWindow::onAddManualChargeButtonClicked() {
 }
 
 void MainWindow::onAddCharge(double x, double y, double charge) {
-    ChargePoint point;        
-    point.x = static_cast<uint>(x); 
-    point.y = static_cast<uint>(y); 
-    point.charge = charge;    
+    ChargePoint point;
+    point.x = static_cast<uint>(x);
+    point.y = static_cast<uint>(y);
+    point.charge = charge;
 
-    chargePoints.append(point); 
+    chargePoints.append(point);
 
-    ChargeItem *chargeItem = new ChargeItem(point); 
+    ChargeItem *chargeItem = new ChargeItem(point);
     scene->addItem(chargeItem);
-    logAllCharges(); 
+    logAllCharges();
 }
 
 void MainWindow::logAllCharges() {
@@ -178,3 +215,4 @@ bool MainWindow::eventFilter(QObject *watched, QEvent *event) {
 
     return QMainWindow::eventFilter(watched, event);
 }
+

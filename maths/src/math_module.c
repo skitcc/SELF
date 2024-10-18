@@ -1,4 +1,4 @@
-#include "math_module.h"
+#include "../inc/math_module.h"
 
 // Расчет полей ////////////////////////////////////////////////////////////////////////////////////////////////
 int calculate_potential_field(int rows, int cols, point_charge *charges, int count_of_charges, double ***field)
