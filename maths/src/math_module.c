@@ -6,6 +6,8 @@ double calculate_single_point_potential(int x, int y, point_charge *charges, int
     double potential = 0.0;
     for (int c = 0; c < num_of_charges; c++)
     {
+        if (!is_position_allowed(x, y, charges[c]))
+            return 0.0
         potential += calc_potential(x, y, charges[c]);
     }
     return potential;
