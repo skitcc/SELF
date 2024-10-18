@@ -2,7 +2,7 @@ $(shell mkdir -p out unit_tests)
 
 CC := gcc
 
-CFLAGS := -std=c99 -Wall -Werror -Wpedantic -Wextra -Wvla -Wfloat-conversion -Wfloat-equal -Iinc -g3
+CFLAGS := -std=c99 -Wall -Werror -Wpedantic -Wextra -Wvla -Wfloat-conversion -Wfloat-equal -Iinc -g3 -lm
 LINKFLAGS := -lcheck -lrt -lpthread -lsubunit -lm
 
 SRC_DIR := ./src/
@@ -23,7 +23,7 @@ app.exe : $(APP_OBJS)
 	@$(CC) -o $@ $^
 
 $(OUT_DIR)%.o : $(SRC_DIR)%.c
-	@$(CC) $(CFLAGS) -c -MD $< -o $@
+	@$(CC) $(CFLAGS) -c -MD $< -o $@ $(LINKFLAGS)
 
 unit_tests.exe : $(UNITONLY_OBJS) $(NOMAIN_OBJS)
 	@$(CC) -o $@ $^ $(LINKFLAGS)
