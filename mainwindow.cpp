@@ -74,8 +74,40 @@ void MainWindow::onCalculateButtonClicked() {
         return;
     }
 
-    logAllCharges();  // Выводим список всех зарядов в лог
+    // Выделяем память для массива потенциала
+    potentialField = (double **)calloc(600, sizeof(double *));
+    for (int i = 0; i < 600; i++) {
+        potentialField[i] = (double *)calloc(800, sizeof(double));
+    }
+
+    point_charge *charges = (point_charge *)malloc(chargePoints.size() * sizeof(point_charge));
+    for (int i = 0; i < chargePoints.size(); ++i) {
+        charges[i].x = chargePoints[i].x;
+        charges[i].y = chargePoints[i].y;
+        charges[i].value = chargePoints[i].charge;
+    }
+
+    
+    int result = calculate_potential_field(600, 800, charges, chargePoints.size(), &potentialField);
+    
+    if (result != OK) {
+        QMessageBox::warning(this, "Ошибка", "Не удалось вычислить потенциал поля.");
+        free(charges);
+        for (int i = 0; i < 600; i++) {
+            free(potentialField[i]);
+        }
+        free(potentialField);
+        return;
+    }
+
+
+    free(charges);  
+    for (int i = 0; i < 600; i++) {
+        free(potentialField[i]);
+    }
+    free(potentialField);
 }
+
 
 void MainWindow::onClearButtonClicked() {
     scene->clear();

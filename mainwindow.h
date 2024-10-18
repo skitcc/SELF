@@ -1,6 +1,8 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
+#include "./math_module/inc/math_module.h"
+
 #include <QMainWindow>
 #include <QGraphicsScene>
 #include <QGraphicsView>
@@ -70,6 +72,7 @@ private:
     QPushButton *clearButton;
     QPushButton *addPointButton;
     QPushButton *addManualChargeButton;
+    double **potentialField;
 
     QList<ChargePoint> chargePoints;  
 };
