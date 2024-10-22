@@ -6,7 +6,7 @@ from extras import *
 import os
 import glob
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageTk
 
 
 class InterfaceApp:
@@ -36,6 +36,8 @@ class InterfaceApp:
         self.points = []
         self.entries = []
         self.buttons = []
+        self.background_image = None
+        self.canvas_image_id = None
         self.electric_field = None
         self.potential_field = None
         self.point_label = None
@@ -141,13 +143,13 @@ class InterfaceApp:
         if self.current_mode != "Ввод":
             return
         input_window = tk.Toplevel(self.root)
-        input_window.title(" ")
+        input_window.title("Введите заряд")
         input_window.resizable(False, False)
         input_window.geometry("150x120")
 
-        input_window.grab_set()
+        input_window.after(100, input_window.grab_set)
 
-        tk.Label(input_window, text="Введите заряд:").pack(pady=10)
+        tk.Label(input_window, text="Введите заряд (нк):").pack(pady=10)
 
         entry = tk.Entry(input_window)
         entry.pack(pady=5)
@@ -159,6 +161,9 @@ class InterfaceApp:
     def submit_value(self, value, window, event):
         try:
             float_value = float(value)
+            if float_value == 0:
+                messagebox.showerror("Ошибка", "Пожалуйста, введите корректное дробное значение.")
+                return
             self.create_point(event, float_value)
             window.destroy()
         except ValueError:
@@ -186,8 +191,6 @@ class InterfaceApp:
                 self.points.remove(i)
 
     def hide_inputs_and_buttons(self):
-        # Вот тут нужна еще функция для удаления картинки
-        # Само собой - когда сделаете функцию для добавления картинки на канвас
         for entry in self.entries:
             entry.place_forget()
 
@@ -195,6 +198,10 @@ class InterfaceApp:
             button.place_forget()
 
         self.info_near_cursor.place_forget()
+
+        if hasattr(self, 'canvas_image_id'):
+            self.canvas.delete(self.canvas_image_id)
+            del self.canvas_image_id
 
     def interpolate_color(self, color1, color2, factor):
         return tuple([
@@ -225,16 +232,9 @@ class InterfaceApp:
     def normalize_matrix(self, mtrx):
         matrix = np.array(mtrx)
 
-        # 1. Превращаем матрицу в одномерный массив
         flat_matrix = matrix.flatten()
-
-        # 2. Сортируем массив
         sorted_flat_matrix = np.sort(flat_matrix)
-
-        # 3. Находим процентиль для каждого значения
         percentiles = np.percentile(sorted_flat_matrix, np.arange(0, 100, 1))
-
-        # 4. Создаем новую матрицу с процентилями
         percentile_matrix = np.searchsorted(percentiles, matrix, side='right')
 
         return percentile_matrix
@@ -243,20 +243,27 @@ class InterfaceApp:
         return '#{:02x}{:02x}{:02x}'.format(*rgb)
 
     def draw_potential_field(self):
-        img = Image.new('RGB', (self.cols, self.rows))
-        pixels = img.load()
+        image = Image.new('RGB', (self.cols, self.rows))
+        pixels = image.load()
         tmp = self.normalize_matrix(self.potential_field)
+
         for row in range(self.rows):
             for col in range(self.cols):
                 value = tmp[row][col]
                 color = self.get_color(value)
                 pixels[col, row] = color
 
-        img.save("img.png", format="PNG")
+        image.save("img.png", format="PNG")
 
-        # Тут надо придумать как вставлять картинку на канвас
-        # Она должна быть поверх фона, но ниже точек
-        # И надо уметь её удалять при выходе из режима потенциалов
+        image = image.resize((self.cols, self.rows), Image.Resampling.LANCZOS)
+
+        self.background_image = ImageTk.PhotoImage(image)
+
+        if hasattr(self, 'canvas_image_id'):
+            self.canvas.itemconfig(self.canvas_image_id, image=self.background_image)
+        else:
+            self.canvas_image_id = self.canvas.create_image(0, 0, anchor="nw", image=self.background_image)
+            self.canvas.tag_lower(self.canvas_image_id)
 
     def on_input_button(self):
         self.hide_inputs_and_buttons()
