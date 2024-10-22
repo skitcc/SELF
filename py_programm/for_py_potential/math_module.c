@@ -1,4 +1,4 @@
-#include "../inc/math_module.h"
+#include "math_module.h"
 
 // Расчет потенциала единственной точки //////////////////////////////////////////////////////////
 double calculate_single_point_potential(int x, int y, point_charge *charges, int num_of_charges)
@@ -7,7 +7,7 @@ double calculate_single_point_potential(int x, int y, point_charge *charges, int
     for (int c = 0; c < num_of_charges; c++)
     {
         if (!is_position_allowed(x, y, charges[c]))
-            return 0.0
+            return 0.0;
         potential += calc_potential(x, y, charges[c]);
     }
     return potential;
