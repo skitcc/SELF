@@ -206,7 +206,7 @@ class InterfaceApp:
         yellow = (255, 255, 0)
         scarlet = (255, 36, 0)
 
-        lp = 48
+        lp = 5
         d = 50 - lp
         mp = lp + d
         up = mp + d
@@ -222,11 +222,22 @@ class InterfaceApp:
         else:
             return scarlet
 
-    def normalize_matrix(self, matrix):
-        min_val = np.min(matrix)
-        max_val = np.max(matrix)
-        norm_matrix = 100 * (matrix - min_val) / (max_val - min_val)
-        return norm_matrix
+    def normalize_matrix(self, mtrx):
+        matrix = np.array(mtrx)
+
+        # 1. Превращаем матрицу в одномерный массив
+        flat_matrix = matrix.flatten()
+
+        # 2. Сортируем массив
+        sorted_flat_matrix = np.sort(flat_matrix)
+
+        # 3. Находим процентиль для каждого значения
+        percentiles = np.percentile(sorted_flat_matrix, np.arange(0, 100, 1))
+
+        # 4. Создаем новую матрицу с процентилями
+        percentile_matrix = np.searchsorted(percentiles, matrix, side='right')
+
+        return percentile_matrix
 
     def rgb_to_hex(self, rgb):
         return '#{:02x}{:02x}{:02x}'.format(*rgb)
