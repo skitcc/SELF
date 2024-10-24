@@ -7,6 +7,31 @@
 extern "C" {
 #endif
 
+#include <pthread.h>
+#include <stdlib.h>
+#include <math.h>
+
+typedef struct {
+    int start_row;
+    int end_row;
+    int cols;
+    point_charge *charges;
+    int count_of_charges;
+    double ***field;
+} potential_field_data;
+
+typedef struct {
+    int start_row;
+    int end_row;
+    int cols;
+    point_charge *charges;
+    int count_of_charges;
+    vect ***field;
+} electric_field_data;
+
+
+double **lol_kek_cheburek_wrapper(int rows, int cols, point_charge *charges, int count);
+
 // Рассчет -- функции на импорт
 int calculate_potential_field(int rows, int cols, point_charge *charges, int count_of_charges, double ***field);
 int calculate_electric_field(int rows, int cols, point_charge *charges, int count_of_charges, vect ***field);

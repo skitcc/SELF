@@ -1,4 +1,5 @@
 #include "math_module.h"
+#include "stdio.h"
 
 void readfile(const char *filename, int *x, int *y, point_charge *charges, int *count)
 {
@@ -43,11 +44,14 @@ int main(int argc, char **argv)
     char *out_file = argv[2];
     int rows, cols, count;
     point_charge charges[1000];
-
+    printf("read\n");
     readfile(in_file, &rows, &cols, charges, &count);
     double **potential_field = NULL;
+    printf("calculate\n");
     calculate_potential_field(rows, cols, charges, count, &potential_field);
+    printf("write\n");
     writefile(out_file, potential_field, rows, cols);
+    printf("free\n");
     free_potential_field(rows, potential_field);
     return 0;
 }

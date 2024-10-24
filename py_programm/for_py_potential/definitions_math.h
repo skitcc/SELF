@@ -36,4 +36,6 @@ typedef struct
 }
 #endif
 
+
+
 #endif // DEFINITIONS_MATH_H__
