@@ -1,19 +1,19 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
-from imported_math_module import *
-import subprocess
-from extras import *
-import os
-import glob
+import ctypes
 import numpy as np
 from PIL import Image, ImageTk
 
+class PointCharge(ctypes.Structure):
+    _fields_ = [("x", ctypes.c_int),
+                ("y", ctypes.c_int),
+                ("value", ctypes.c_double)]
 
 class InterfaceApp:
     def __init__(self, mainroot):
         self.root = mainroot
         self.root.title("Интерфейс программы")
-        self.root.state('zoomed')
+        self.root.state('normal')
         self.root.resizable(True, True)
         self.root.configure(bg="#3b3b3b")
 
@@ -56,12 +56,11 @@ class InterfaceApp:
         self.root.config(menu=menubar)
 
     def create_right_panel(self):
-
         self.create_entry_with_placeholder("Введите координату по вертикали", 0.2)
         self.create_entry_with_placeholder("Введите координату по горизонтали", 0.27)
         self.create_entry_with_placeholder("Введите значения заряда", 0.34)
 
-        button1 = ttk.Button(self.root, text="Добавить введенный заряд")
+        button1 = ttk.Button(self.root, text="Добавить введенный заряд", command=self.add_charge)
         button1.place(relx=0.65, rely=0.41, relwidth=0.3, relheight=0.05)
 
         button3 = ttk.Button(self.root, text="Очистить", command=self.clear_points)
@@ -118,20 +117,20 @@ class InterfaceApp:
 
         self.info_near_cursor.place(x=x + 10, y=y - 10)
 
-    def create_point(self, event_t, float_value):
+    def create_point(self, x, y, float_value):
         current_point = PointCharge()
-        current_point.x = event_t.y
-        current_point.y = event_t.x
+        current_point.x = y
+        current_point.y = x
         current_point.value = float_value
 
         radius = 5
-        x1 = event_t.x - radius
-        y1 = event_t.y - radius
-        x2 = event_t.x + radius
-        y2 = event_t.y + radius
+        x1 = x - radius
+        y1 = y - radius
+        x2 = x + radius
+        y2 = y + radius
         point = self.canvas.create_oval(x1, y1, x2, y2, fill="yellow", outline="yellow")
 
-        self.canvas.tag_bind(point, '<Enter>', lambda event: self.show_point_label(event, event_t, float_value))
+        self.canvas.tag_bind(point, '<Enter>', lambda event: self.show_point_label(event, x, y, float_value))
         self.canvas.tag_bind(point, '<Leave>', self.hide_point_label)
         self.canvas.tag_bind(point, '<Button-3>', lambda event: self.delete_point(point))
         self.points.append((point, current_point))
@@ -164,15 +163,15 @@ class InterfaceApp:
             if float_value == 0:
                 messagebox.showerror("Ошибка", "Пожалуйста, введите корректное дробное значение.")
                 return
-            self.create_point(event, float_value)
+            self.create_point(event.x, event.y, float_value)
             window.destroy()
         except ValueError:
             messagebox.showerror("Ошибка", "Пожалуйста, введите корректное дробное значение.")
 
-    def show_point_label(self, event, event_t, label):
+    def show_point_label(self, event, x, y, label):
         if self.point_label is None:
             self.point_label = tk.Label(self.root, text=str(label), bg="white", borderwidth=1, relief="solid")
-            self.point_label.place(x=event_t.x + 10, y=event_t.y - 20)
+            self.point_label.place(x=x + 10, y=y - 20)
 
     def hide_point_label(self, event):
         if self.point_label is not None:
@@ -193,10 +192,10 @@ class InterfaceApp:
     def hide_inputs_and_buttons(self):
         for entry in self.entries:
             entry.place_forget()
-
+        self.entries.clear()
         for button in self.buttons:
             button.place_forget()
-
+        self.buttons.clear()
         self.info_near_cursor.place_forget()
 
         if hasattr(self, 'canvas_image_id'):
@@ -255,7 +254,7 @@ class InterfaceApp:
 
         image.save("img.png", format="PNG")
 
-        image = image.resize((self.cols, self.rows), Image.Resampling.LANCZOS)
+        image = image.resize((self.cols, self.rows))
 
         self.background_image = ImageTk.PhotoImage(image)
 
@@ -272,15 +271,32 @@ class InterfaceApp:
         self.potential_field = None
         self.electric_field = None
 
+    def call_lol_kek_cheburek_wrapper(self, rows, cols, charges):
+        import os
+        if os.name == "posix":
+            lib = ctypes.CDLL('./for_py_potential/libpotential_field.so')
+        else:
+            lib = ctypes.CDLL('./for_py_potential/libpotential_field.dll')
+        
+        lib.lol_kek_cheburek_wrapper.argtypes = [ctypes.c_int, ctypes.c_int, ctypes.POINTER(PointCharge), ctypes.c_int]
+        lib.lol_kek_cheburek_wrapper.restype = ctypes.POINTER(ctypes.POINTER(ctypes.c_double))
+
+        charge_array = (PointCharge * len(charges))(*charges)
+
+        result = lib.lol_kek_cheburek_wrapper(rows, cols, charge_array, len(charges))
+
+        matrix = np.zeros((rows, cols), dtype=np.float64)
+        for i in range(rows):
+            for j in range(cols):
+                matrix[i, j] = result[i][j]
+
+        return matrix.tolist()
+
     def on_potentials_button(self):
         self.hide_inputs_and_buttons()
         self.current_mode = "Потенциалы"
         charges = [i[1] for i in self.points]
-        infile = "infile_potential.txt"
-        outfile = "outfile_potential.txt"
-        write_potential(infile, self.rows, self.cols, charges)
-        subprocess.run(["potential_field.exe", infile, outfile])
-        self.potential_field = read_potential(outfile, self.rows)
+        self.potential_field = self.call_lol_kek_cheburek_wrapper(self.rows, self.cols, charges)
         self.draw_potential_field()
 
     def on_electric_field_button(self):
@@ -289,10 +305,32 @@ class InterfaceApp:
     def calculate_potential(self, x, y):
         pass
 
+    def add_charge(self):
+        try:
+            y = float(self.entries[0].get())
+            x = float(self.entries[1].get())
+            charge = float(self.entries[2].get())
+
+            if y < 0 or y >= self.rows or x < 0 or x >= self.cols:
+                messagebox.showerror("Ошибка", "Координаты должны быть в пределах от 0 до {}.".format(self.rows - 1))
+                return
+
+            if charge == 0:
+                messagebox.showerror("Ошибка", "Заряд не может быть равен 0.")
+                return
+
+            self.create_point(int(x), int(y), charge)
+
+            self.entries[0].delete(0, tk.END)
+            self.entries[1].delete(0, tk.END)
+            self.entries[2].delete(0, tk.END)
+
+            self.entries[0].focus_set()
+
+        except ValueError:
+            messagebox.showerror("Ошибка", "Пожалуйста, введите корректные числовые значения.")
 
 if __name__ == "__main__":
     root = tk.Tk()
     app = InterfaceApp(root)
     root.mainloop()
-    for file in glob.glob(os.path.join(os.getcwd(), "*.txt")):
-        os.remove(file)

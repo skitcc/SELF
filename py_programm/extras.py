@@ -1,13 +1,3 @@
-def read_potential(filename, rows):
-    matrix = []
-    with open(filename, "r") as file:
-        for i in range(rows):
-            string = file.readline()
-            row = list(map(float, string.split()))
-            matrix.append(row)
-    return matrix
-
-
 def write_potential(filename, x, y, charges):
     with open(filename, "w", newline='') as file:
         print(f"{x} {y}\n", end='', file=file)

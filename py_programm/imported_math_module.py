@@ -1,5 +1,5 @@
 class PointCharge:
-    def __int__(self):
+    def __init__(self):
         self.x = 0
         self.y = 0
         self.value = 0
